@@ -18,6 +18,8 @@ function createMessage(role, content) {
 export default function App() {
   const [knowledgeLoaded, setKnowledgeLoaded] = useState(false);
   const [businessName, setBusinessName] = useState('Your Business');
+  // KB text stored in frontend — backend is stateless (works correctly on Vercel)
+  const [knowledgeBase, setKnowledgeBase] = useState('');
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [chatError, setChatError] = useState('');
@@ -25,7 +27,6 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const prevMsgCount = useRef(0);
 
-  // Play sound when new AI message arrives
   useEffect(() => {
     const lastMsg = messages[messages.length - 1];
     if (
@@ -38,8 +39,9 @@ export default function App() {
     prevMsgCount.current = messages.length;
   }, [messages, soundEnabled]);
 
-  const handleSetupComplete = useCallback(({ businessName: biz, suggestedQuestions: sq }) => {
+  const handleSetupComplete = useCallback(({ businessName: biz, extractedText, suggestedQuestions: sq }) => {
     setBusinessName(biz);
+    setKnowledgeBase(extractedText || '');
     setSuggestedQuestions(sq || []);
     setMessages([]);
     setKnowledgeLoaded(true);
@@ -47,6 +49,7 @@ export default function App() {
 
   const handleReset = useCallback(() => {
     setKnowledgeLoaded(false);
+    setKnowledgeBase('');
     setMessages([]);
     setChatError('');
     setIsTyping(false);
@@ -68,7 +71,12 @@ export default function App() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text.trim(), conversationHistory }),
+          body: JSON.stringify({
+            message: text.trim(),
+            knowledgeBase,
+            businessName,
+            conversationHistory,
+          }),
         });
 
         const rawText = await res.text();
@@ -90,7 +98,7 @@ export default function App() {
         setIsTyping(false);
       }
     },
-    [messages, isTyping]
+    [messages, isTyping, knowledgeBase, businessName]
   );
 
   const handleExportTxt = useCallback(() => exportAsTxt(messages, businessName), [messages, businessName]);

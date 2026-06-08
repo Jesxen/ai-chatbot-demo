@@ -71,6 +71,7 @@ export default function SetupPanel({ onSetupComplete }) {
 
       onSetupComplete({
         businessName: businessName.trim(),
+        extractedText: data.extractedText || '',
         fileName: data.fileName,
         charCount: data.charCount,
         suggestedQuestions: data.suggestedQuestions || [],

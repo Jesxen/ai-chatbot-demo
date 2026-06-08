@@ -1,32 +1,39 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
-import { getKnowledgeBase, getBusinessName } from './upload.js';
 
 const router = express.Router();
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const MAX_MESSAGE_LENGTH = 2000;
+
+// Strip characters that could escape the system prompt template
+function sanitizeName(str) {
+  return String(str)
+    .replace(/[<>{}|\\]/g, '')
+    .slice(0, 100)
+    .trim() || 'My Business';
+}
 
 // POST /api/chat
+// Stateless: receives knowledgeBase + businessName from frontend each request.
 router.post('/', async (req, res) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
+    const { message, knowledgeBase, businessName, conversationHistory = [] } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    const kb = getKnowledgeBase();
-    const biz = getBusinessName();
-
-    if (!kb) {
-      return res.status(400).json({
-        error:
-          'No knowledge base loaded. Please upload a .txt knowledge base file in the setup screen before chatting.',
-      });
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.` });
     }
 
-    // Build system prompt
+    if (!knowledgeBase || typeof knowledgeBase !== 'string' || !knowledgeBase.trim()) {
+      return res.status(400).json({ error: 'No knowledge base provided. Please reload and upload your file.' });
+    }
+
+    const biz = sanitizeName(businessName || 'My Business');
+
     const systemPrompt = `You are a helpful AI assistant for ${biz}.
 
 LANGUAGE RULE: Detect the language the user is writing in and always respond in that same language. If the user writes in Spanish, respond in Spanish. If French, respond in French. Match the user's language exactly every time.
@@ -36,27 +43,18 @@ KNOWLEDGE RULE: Answer questions ONLY using the information in the knowledge bas
 Be professional, friendly, and concise. Format responses clearly.
 
 --- KNOWLEDGE BASE ---
-${kb}
+${knowledgeBase}
 --- END KNOWLEDGE BASE ---`;
 
-    // Take at most the last 10 messages for context (5 exchanges)
     const recentHistory = conversationHistory.slice(-10);
 
-    // Build messages array: history + current user message
     const messages = [
       ...recentHistory.map((m) => ({
-        role: m.role,
-        content: m.content,
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: String(m.content).slice(0, MAX_MESSAGE_LENGTH),
       })),
-      {
-        role: 'user',
-        content: message.trim(),
-      },
+      { role: 'user', content: message.trim() },
     ];
-
-    console.log(
-      `[Chat] "${biz}" — user message: "${message.trim().slice(0, 80)}${message.length > 80 ? '…' : ''}"`
-    );
 
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -66,16 +64,13 @@ ${kb}
     });
 
     const reply = response.content[0]?.text || 'Sorry, I could not generate a response.';
-
-    console.log(`[Chat] Reply: "${reply.slice(0, 80)}${reply.length > 80 ? '…' : ''}"`);
-
     return res.json({ reply });
+
   } catch (err) {
     console.error('[Chat Error]', err);
 
-    // Surface Anthropic API errors helpfully
     if (err?.status === 401) {
-      return res.status(500).json({ error: 'Invalid Anthropic API key. Check your .env file.' });
+      return res.status(500).json({ error: 'Invalid Anthropic API key.' });
     }
     if (err?.status === 429) {
       return res.status(429).json({ error: 'Rate limit reached. Please wait a moment and try again.' });
