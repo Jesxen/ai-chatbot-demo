@@ -5,17 +5,11 @@ import chatRouter from './routes/chat.js';
 import uploadRouter from './routes/upload.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// On Vercel, frontend and backend share the same domain — no CORS needed.
-// In dev, allow localhost origins.
 const isVercel = !!process.env.VERCEL;
 
 app.use(
   cors({
-    origin: isVercel
-      ? true
-      : ['http://localhost:5173', 'http://localhost:4173'],
+    origin: isVercel ? true : ['http://localhost:5173', 'http://localhost:4173'],
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],
   })
@@ -41,6 +35,10 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+// Local dev only — Vercel uses the exported app, not listen()
+if (!isVercel) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+}
+
+export default app;
