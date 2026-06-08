@@ -151,7 +151,7 @@ export default function SetupPanel({ onSetupComplete }) {
                     <div>
                       <p className="text-sm font-semibold text-emerald-700">{file.name}</p>
                       <p className="text-xs text-emerald-600 mt-0.5">
-                        {(file.size / 1024).toFixed(1)} KB — click to change
+                        {(file.size / 1024).toFixed(1)} KB · click to change
                       </p>
                     </div>
                   </div>
@@ -172,8 +172,7 @@ export default function SetupPanel({ onSetupComplete }) {
               </div>
 
               <p className="text-xs text-slate-500 leading-relaxed">
-                Upload a .txt or .pdf file with your business information — FAQs, services, hours,
-                pricing, etc. The chatbot will answer questions based on this content.
+                Upload a .txt or .pdf with your business info: FAQs, hours, services, pricing, and more.
               </p>
             </div>
 
@@ -211,7 +210,7 @@ export default function SetupPanel({ onSetupComplete }) {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          Powered by Jesxen &mdash; Built for small business demos
+          Powered by Jesxen · For small business demos
         </p>
       </div>
     </div>

@@ -100,7 +100,7 @@ export default function Header({
         {/* Reset */}
         <button
           onClick={onReset}
-          title="Reset — go back to setup"
+          title="Back to setup"
           className="flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors duration-200 px-2.5 py-1.5 rounded-lg text-xs font-medium"
         >
           <RefreshCw size={13} />

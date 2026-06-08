@@ -28,7 +28,7 @@ export default function ChatWindow({ messages, isTyping, onSendExample, suggeste
             How can I help you today?
           </h2>
           <p className="text-slate-500 text-sm text-center mb-8 max-w-xs leading-relaxed">
-            Ask me anything about this business. I'll answer using the knowledge base provided.
+            Ask anything about this business. Answers come directly from what you uploaded.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-2 flex-wrap justify-center">
